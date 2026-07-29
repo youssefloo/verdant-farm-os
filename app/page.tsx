@@ -23,12 +23,50 @@ const ar:Record<string,string>={
   "Overview and identification":"نظرة عامة والتعريف","Timeline":"السجل الزمني","Documents":"المستندات","Time & pay":"الوقت والرواتب","Save changes":"حفظ التغييرات","Print / export":"طباعة / تصدير","Close":"إغلاق","Current plan":"الخطة الحالية","Identity & location":"الهوية والموقع","Recent animal activity":"نشاط الحيوان الأخير","Health & veterinary":"الصحة والطب البيطري","Nutrition plan":"خطة التغذية","Milk production":"إنتاج الحليب","Breeding & genetics":"التكاثر والوراثة","Clinical history":"السجل السريري","Daily ration composition":"مكونات الحصة اليومية","Recent milkings":"جلسات الحلب الأخيرة","Breeding details":"تفاصيل التكاثر","Lineage":"النسب","Schedule & availability":"الجدول والتوفر","Assigned work":"العمل المكلّف","Time & compensation":"الوقت والتعويضات","Contact & employment":"الاتصال والتوظيف","Today’s work":"عمل اليوم","Recent employee activity":"نشاط الموظف الأخير","Add update":"إضافة تحديث","Record details":"تفاصيل السجل","Controls & actions":"الضوابط والإجراءات","Notes & supporting information":"الملاحظات والمعلومات الداعمة","Recent activity":"النشاط الأخير","Cancel":"إلغاء","Archive":"أرشفة","Record name":"اسم السجل","Category":"الفئة","Assigned to":"مكلّف إلى","Due date":"تاريخ الاستحقاق","Notes":"ملاحظات"
 };
 const originalText=new WeakMap<Node,string>();
-function LanguageSwitch(){
+function LegacyLanguageSwitch(){
   const [lang,setLang]=useState<"en"|"ar">("en");
   useEffect(()=>{setLang((localStorage.getItem("verdant-language") as "en"|"ar")||"en")},[]);
   useEffect(()=>{document.documentElement.lang=lang;document.documentElement.dir=lang==="ar"?"rtl":"ltr";document.body.classList.toggle("arabic",lang==="ar");const apply=()=>{const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n:Node|null;while((n=walker.nextNode())){if((n.parentElement?.closest("[data-no-translate]"))||!n.textContent?.trim())continue;if(!originalText.has(n))originalText.set(n,n.textContent);const base=originalText.get(n)||"";if(lang==="en"){if(n.textContent!==base)n.textContent=base;continue}const lead=base.match(/^\s*/)?.[0]||"",trail=base.match(/\s*$/)?.[0]||"",key=base.trim();let value=ar[key];if(!value){value=key.replace(/Good morning,\s*([^.]*)\./,"صباح الخير، $1.").replace(/View /g,"عرض ").replace(/Add /g,"إضافة ").replace(/Create /g,"إنشاء ").replace(/Today/g,"اليوم").replace(/Active/g,"نشط").replace(/Completed/g,"مكتمل").replace(/Healthy/g,"سليم").replace(/Normal/g,"طبيعي")}n.textContent=lead+(value||key)+trail}document.querySelectorAll<HTMLInputElement|HTMLTextAreaElement>("input[placeholder],textarea[placeholder]").forEach(el=>{if(!el.dataset.enPlaceholder)el.dataset.enPlaceholder=el.placeholder;el.placeholder=lang==="ar"?(ar[el.dataset.enPlaceholder]||el.dataset.enPlaceholder):el.dataset.enPlaceholder})};apply();const obs=new MutationObserver(()=>requestAnimationFrame(apply));obs.observe(document.body,{childList:true,subtree:true});localStorage.setItem("verdant-language",lang);return()=>obs.disconnect()},[lang]);
   return <button className="language-switch" data-no-translate onClick={()=>setLang(lang==="en"?"ar":"en")} aria-label={lang==="en"?"Switch to Arabic":"Switch to English"}><span>{lang==="en"?"ع":"EN"}</span><b>{lang==="en"?"العربية":"English"}</b></button>
 }
+const appliedText = new WeakMap<Node,string>();
+function LanguageSwitch(){
+  const [lang,setLang]=useState<"en"|"ar">("en");
+  useEffect(()=>{setLang((localStorage.getItem("verdant-language") as "en"|"ar")||"en")},[]);
+  useEffect(()=>{
+    document.documentElement.lang=lang;
+    document.documentElement.dir=lang==="ar"?"rtl":"ltr";
+    document.body.classList.toggle("arabic",lang==="ar");
+    const apply=()=>{
+      const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+      let node:Node|null;
+      while((node=walker.nextNode())){
+        if(node.parentElement?.closest("[data-no-translate]")||!node.textContent?.trim())continue;
+        const current=node.textContent;
+        const lastApplied=appliedText.get(node);
+        if(!originalText.has(node)||(lastApplied!==undefined&&current!==lastApplied))originalText.set(node,current);
+        const base=originalText.get(node)||current;
+        const lead=base.match(/^\s*/)?.[0]||"";
+        const trail=base.match(/\s*$/)?.[0]||"";
+        const key=base.trim();
+        const next=lang==="ar"?lead+(ar[key]||key)+trail:base;
+        if(node.textContent!==next)node.textContent=next;
+        appliedText.set(node,next);
+      }
+      document.querySelectorAll<HTMLInputElement|HTMLTextAreaElement>("input[placeholder],textarea[placeholder]").forEach(el=>{
+        if(!el.dataset.enPlaceholder)el.dataset.enPlaceholder=el.placeholder;
+        el.placeholder=lang==="ar"?(ar[el.dataset.enPlaceholder]||el.dataset.enPlaceholder):el.dataset.enPlaceholder;
+      });
+    };
+    apply();
+    const observer=new MutationObserver(()=>requestAnimationFrame(apply));
+    if(lang==="ar")observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+    localStorage.setItem("verdant-language",lang);
+    return()=>observer.disconnect();
+  },[lang]);
+  return <button className="language-switch" data-no-translate onClick={()=>setLang(lang==="en"?"ar":"en")} aria-label={lang==="en"?"Switch to Arabic":"Switch to English"}><span>{lang==="en"?"ع":"EN"}</span><b>{lang==="en"?"العربية":"English"}</b></button>
+}
+
 const animals = [
   { id:"CT-00428", name:"Willow", type:"Holstein", group:"Dairy · Lactating", age:"4y 2m", weight:642, trend:"+1.8%", health:96, status:"Healthy", feed:"18.4 kg", milk:"31.2 L", last:"Milking · 34m ago", initials:"WI", color:"cream" },
   { id:"CT-00391", name:"Juniper", type:"Jersey", group:"Dairy · Lactating", age:"3y 8m", weight:468, trend:"+0.6%", health:88, status:"Watch", feed:"15.8 kg", milk:"26.9 L", last:"Feed check · 1h", initials:"JU", color:"gold" },
