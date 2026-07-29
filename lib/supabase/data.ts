@@ -37,12 +37,6 @@ export async function createFarmWorkspace(input: {
     .select()
     .single();
   if (error) throw error;
-  const { error: memberError } = await supabase.from("farm_members").insert({
-    farm_id: farm.id,
-    user_id: user.id,
-    role: "owner",
-  });
-  if (memberError) throw memberError;
   return farm;
 }
 
