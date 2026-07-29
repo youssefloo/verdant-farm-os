@@ -23,9 +23,11 @@ export async function createFarmWorkspace(input: {
   const supabase = createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("You must be signed in.");
-  const { data: farm, error } = await supabase
+  const farmId = crypto.randomUUID();
+  const { error } = await supabase
     .from("farms")
     .insert({
+      id: farmId,
       owner_id: user.id,
       name: input.name,
       operation_type: input.operationType,
@@ -33,10 +35,14 @@ export async function createFarmWorkspace(input: {
       team_size: input.teamSize,
       country: "Canada",
       region: "Ontario",
-    })
-    .select()
-    .single();
+    });
   if (error) throw error;
+  const { data: farm, error: readError } = await supabase
+    .from("farms")
+    .select("*")
+    .eq("id", farmId)
+    .single();
+  if (readError || !farm) throw readError ?? new Error("Farm was created but could not be loaded.");
   return farm;
 }
 
