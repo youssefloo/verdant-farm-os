@@ -1,0 +1,11 @@
+pnpm-lock.yaml
+pnpm-workspace.yaml
+.pnpm-store
+build
+worker
+db
+drizzle
+examples
+tests
+.dev-error.log
+.dev-output.log
