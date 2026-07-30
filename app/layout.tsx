@@ -6,8 +6,8 @@ const geist = Geist({ variable:"--font-geist", subsets:["latin"] });
 const mono = Geist_Mono({ variable:"--font-mono", subsets:["latin"] });
 
 export const metadata: Metadata = {
-  title:"Verdant Farm OS — Complete Farm Intelligence",
-  description:"A premium operating system for livestock, workforce, resources, and farm performance.",
+  title:"Verdant — Your whole farm, clearly managed",
+  description:"A simple operating system for real livestock, workforce, resource and finance records.",
   icons:{ icon:"/favicon.svg", shortcut:"/favicon.svg" }
 };
 
