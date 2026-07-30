@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 
 type Language = "en" | "ar";
 const LanguageContext = createContext<{
@@ -299,6 +300,9 @@ function translate(value: string) {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Language>("en");
+  const pathname = usePathname();
+  const landingPage = pathname === "/";
+  const activeLang: Language = landingPage ? "en" : lang;
   const originalsRef = useRef(new WeakMap<Node, string>());
   const appliedRef = useRef(new WeakMap<Node, string>());
   useEffect(() => {
@@ -307,9 +311,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
   useEffect(() => {
-    document.documentElement.lang = lang;
-    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-    document.body.classList.toggle("rtl", lang === "ar");
+    document.documentElement.lang = activeLang;
+    document.documentElement.dir = activeLang === "ar" ? "rtl" : "ltr";
+    document.body.classList.toggle("rtl", activeLang === "ar");
     localStorage.setItem("verdant-language", lang);
     const originals = originalsRef.current;
     const applied = appliedRef.current;
@@ -335,7 +339,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         const lead = source.match(/^\s*/)?.[0] || "",
           trail = source.match(/\s*$/)?.[0] || "";
         const result =
-          lang === "ar" ? lead + translate(source) + trail : source;
+          activeLang === "ar" ? lead + translate(source) + trail : source;
         if (current !== result) node.textContent = result;
         applied.set(node, result);
       }
@@ -345,7 +349,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           if (!el.dataset.enPlaceholder)
             el.dataset.enPlaceholder = el.placeholder;
           el.placeholder =
-            lang === "ar"
+            activeLang === "ar"
               ? translate(el.dataset.enPlaceholder)
               : el.dataset.enPlaceholder;
         });
@@ -358,14 +362,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       characterData: true,
     });
     return () => observer.disconnect();
-  }, [lang]);
+  }, [activeLang, lang]);
   const setLang = (value: Language) => setLangState(value);
   return (
     <LanguageContext.Provider
-      value={{ lang, setLang, t: (v) => (lang === "ar" ? translate(v) : v) }}
+      value={{ lang: activeLang, setLang, t: (v) => (activeLang === "ar" ? translate(v) : v) }}
     >
       {children}
-      <button
+      {!landingPage && <button
         data-language-control
         className="language-control"
         onClick={() => setLang(lang === "en" ? "ar" : "en")}
@@ -375,7 +379,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       >
         <b>{lang === "en" ? "ع" : "EN"}</b>
         <span>{lang === "en" ? "العربية" : "English"}</span>
-      </button>
+      </button>}
     </LanguageContext.Provider>
   );
 }
