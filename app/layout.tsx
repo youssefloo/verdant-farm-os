@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { LanguageProvider } from "./language";
 
 const geist = Geist({ variable:"--font-geist", subsets:["latin"] });
 const mono = Geist_Mono({ variable:"--font-mono", subsets:["latin"] });
@@ -11,4 +12,4 @@ export const metadata: Metadata = {
   icons:{ icon:"/favicon.svg", shortcut:"/favicon.svg" }
 };
 
-export default function RootLayout({children}:{children:React.ReactNode}) { return <html lang="en"><body className={`${geist.variable} ${mono.variable}`}>{children}</body></html> }
+export default function RootLayout({children}:{children:React.ReactNode}) { return <html lang="en" suppressHydrationWarning><body className={`${geist.variable} ${mono.variable}`}><LanguageProvider>{children}</LanguageProvider></body></html> }
